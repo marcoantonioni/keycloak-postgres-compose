@@ -29,3 +29,8 @@ exit
 kc_ctr=$(podman ps | grep keycloak | awk '{print $1}')
 podman cp ${kc_ctr}:/tmp/quarkus-realm.json ./realms/quarkus-realm.json
 ```
+
+## update repo
+```
+git add . && git commit -m "update" && git push origin main
+```
