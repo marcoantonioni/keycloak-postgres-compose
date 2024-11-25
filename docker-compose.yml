@@ -10,9 +10,9 @@ services:
       - ./sql:/docker-entrypoint-initdb.d:Z
     healthcheck:
       test: ["CMD", "pg_isready", "-q", "-d", "kogito", "-U", "kogito-user"]
-      timeout: 45s
-      interval: 10s
-      retries: 500
+      timeout: 15s
+      interval: 5s
+      retries: 100
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -27,8 +27,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./quarkus-realm.json:/opt/keycloak/data/import/quarkus-realm.json:Z
-      - ./keycloak-keystore.jks:/etc/keycloak-keystore.jks:Z
+      - ./realms/quarkus-realm.json:/opt/keycloak/data/import/quarkus-realm.json:Z
+      - ./keystores/keycloak-keystore.jks:/etc/keycloak-keystore.jks:Z
     #healthcheck:
     #  test: ["CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito-marco"]
     #  #test: ["CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito"]
