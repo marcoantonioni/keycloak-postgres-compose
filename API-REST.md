@@ -85,21 +85,25 @@ curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H 
 
 #--------------------------------------------------------
 # associa utente a gruppo
-PUT /admin/realms/{realm}/users/{user-id}/groups/{groupId}
+KC_USER=user2
+KC_GROUP_NAME=groupBeta
+KC_REALM=quarkus
 
+KC_USER_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users" | jq '.[] | select(.username == "'${KC_USER}'")' | jq .id | sed 's/"//g')
 
+KC_GROUP_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq '.[] | select(.name == "'${KC_GROUP_NAME}'")' | jq .id | sed 's/"//g')
+
+[[ ! -z "${KC_GROUP_ID}" ]] && [[ ! -z "${KC_GROUP_ID}" ]] && curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/${KC_USER_ID}/groups/${KC_GROUP_ID}"
 
 
 #--------------------------------------------------------
 # crea realm
-
-????
-curl -k -v -X POST "${KEYCLOAK_HOST}/realms" \
+KC_REALM=pluto
+curl -k -s -X POST "${KEYCLOAK_HOST}/admin/realms" \
   -H "Authorization: Bearer ${KC_TOKEN}" -H "Accept: application/json" -H "Content-Type: application/json" \
   -d '{
-    "id": "mynewrealm",
-    "realm": "my-new-realm",
-    "displayName": "My New Realm",
+    "realm": "'${KC_REALM}'",
+    "displayName": "'${KC_REALM}'",
     "enabled": true,
     "sslRequired": "external",
     "registrationAllowed": false,
