@@ -19,8 +19,7 @@ echo $KC_TOKEN
 
 KC_REALM=master
 KC_TK_EXP_SECS=7200
-curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/ui-ext" \
-    -d '{"accessTokenLifespan": '${KC_TK_EXP_SECS}' }' | jq .
+curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/ui-ext" -d '{"accessTokenLifespan": '${KC_TK_EXP_SECS}' }' | jq .
 
 #--------------------------------------------------------
 # info realm
@@ -29,6 +28,33 @@ curl -v -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" 
 #--------------------------------------------------------
 # elenco dei clients
 curl -v -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/master/clients" | jq .
+
+#--------------------------------------------------------
+# numero gruppi (token admin)
+KC_REALM=master
+KC_REALM_GROUPS=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups/count" | jq .count)
+echo "[${KC_REALM}] groups: "${KC_REALM_GROUPS}
+
+KC_REALM=quarkus
+KC_REALM_GROUPS=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups/count" | jq .count)
+echo "[${KC_REALM}] groups: "${KC_REALM_GROUPS}
+
+#--------------------------------------------------------
+# lista gruppi (token admin)
+
+KC_REALM=master
+curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq .
+
+KC_REALM=quarkus
+curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq .
+
+#--------------------------------------------------------
+# crea gruppo (token admin)
+
+KC_REALM=quarkus
+KC_GROUP_NAME=groupBeta
+curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" \
+    -d '{ "name": "'${KC_GROUP_NAME}'" }' | jq .
 
 #--------------------------------------------------------
 # numero utenti (token admin)
@@ -57,37 +83,9 @@ curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H 
     -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users" \
     -d '{ "username": "'${KC_USER}'", "firstName":"'${KC_USER}'","lastName":"'${KC_USER}'", "email":"'${KC_USER}'@home.net", "enabled":"true", "groups": ["groupAlfa"] }'
 
-
-
 #--------------------------------------------------------
-# numero gruppi (token admin)
-KC_REALM=master
-KC_REALM_GROUPS=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups/count" | jq .count)
-echo "[${KC_REALM}] groups: "${KC_REALM_GROUPS}
-
-KC_REALM=quarkus
-KC_REALM_GROUPS=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups/count" | jq .count)
-echo "[${KC_REALM}] groups: "${KC_REALM_GROUPS}
-
-#--------------------------------------------------------
-# lista gruppi (token admin)
-
-KC_REALM=master
-curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq .
-
-KC_REALM=quarkus
-curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq .
-
-
-#--------------------------------------------------------
-# crea gruppo (token admin)
-
-KC_REALM=quarkus
-KC_GROUP_NAME=groupBeta
-curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" \
-    -d '{ "name": "'${KC_GROUP_NAME}'" }' | jq .
-
-
+# associa utente a gruppo
+PUT /admin/realms/{realm}/users/{user-id}/groups/{groupId}
 
 
 
