@@ -15,6 +15,9 @@ https://stackoverflow.com/questions/56526560/create-a-user-on-keycloack-includin
 ./clear.sh && podman compose up
 
 podman compose events
+
+podman network prune -f
+podman network inspect keycloak-postgres-compose_default
 ```
 
 ## KeyCloak console
