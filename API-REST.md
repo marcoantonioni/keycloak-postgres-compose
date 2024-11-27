@@ -2,7 +2,7 @@
 
 
 ```
-KEYCLOAK_HOST=https://localhost:8443
+KEYCLOAK_HOST=https://localhost:7433
 
 #--------------------------------------------------------
 # token admin realm master, admin-cli
