@@ -13,6 +13,8 @@ https://stackoverflow.com/questions/56526560/create-a-user-on-keycloack-includin
 ## Avvio containers
 ```
 ./clear.sh && podman compose up
+
+podman compose events
 ```
 
 ## KeyCloak console

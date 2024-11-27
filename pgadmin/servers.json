@@ -1,7 +1,7 @@
 {
   "Servers": {
     "1": {
-      "Name": "keycloak",
+      "Name": "My Server",
       "Group": "Servers",
       "Host": "postgres",
       "Port": 5432,
