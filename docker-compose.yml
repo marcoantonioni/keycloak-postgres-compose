@@ -65,11 +65,7 @@ services:
       - ${PA_VOL_1}
       - ${PA_VOL_2}
     entrypoint: >
-      /bin/sh -c "
-      cp -f /pgadmin4/pgpass /var/lib/pgadmin/;
-      chmod 600 /var/lib/pgadmin/pgpass;
-      /entrypoint.sh
-      "
+      /bin/sh -c "cp -f /pgadmin4/pgpass /var/lib/pgadmin/; chmod 600 /var/lib/pgadmin/pgpass; /entrypoint.sh"
     environment:
       PGADMIN_DEFAULT_EMAIL: user@home.net
       PGADMIN_DEFAULT_PASSWORD: pass
