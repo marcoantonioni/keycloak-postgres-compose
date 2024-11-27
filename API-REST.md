@@ -11,7 +11,8 @@ KC_REALM=master
 KC_USER_NAME=admin
 KC_USER_PWD=admin
 KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
-echo $KC_TOKEN
+
+#echo $KC_TOKEN
 
 # Token expiration
 # Modificare 'Access Token Lifespan'
