@@ -3,10 +3,11 @@
     "1": {
       "Name": "My Server",
       "Group": "Servers",
-      "Host": "postgres",
+      "Host": "pgkcloak",
       "Port": 5432,
       "MaintenanceDB": "keycloak",
       "Username": "kc-user",
+      "Password": "kc-pass",
       "SSLMode": "disable",
       "PassFile": "/var/lib/pgadmin/pgpass"
     }
