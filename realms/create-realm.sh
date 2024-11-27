@@ -4,6 +4,21 @@ declare -a _GROUPS=("Requestors" "Validators")
 declare _USER_PREFIX="user"
 declare _USER_MAX=10
 
+declare -A two_d_array
+
+two_d_array[0,0]="1"
+two_d_array[0,1]="2"
+two_d_array[0,2]="3"
+two_d_array[0,3]="4"
+two_d_array[0,4]="5"
+
+two_d_array[1,0]="6"
+two_d_array[1,1]="7"
+two_d_array[1,2]="8"
+two_d_array[1,3]="9"
+two_d_array[1,4]="10"
+
+
 declare KEYCLOAK_HOST=https://localhost:7433
 declare KC_CLIENT_ID=admin-cli
 declare KC_REALM=master
@@ -63,10 +78,28 @@ function _createUsers() {
   fi
 }
 
+function _mapUsersToRoles() {
+  echo ""
+}
+
 #-------------------------------
+echo "Array di array"
+# Get the dimensions of the 2D array
+rows=2
+cols=${#two_d_array[@]}
+
+# Loop through the rows and columns to print the elements
+for ((i=0; i < rows; i++)); do
+    for ((j=0; j < cols; j++)); do
+        echo -n "${_GROUPS[$i]} ${two_d_array[$i,$j]} - "  # Print each element with a space
+    done
+    echo  # Move to the next line after printing a row
+done
+
+exit
 
 _getToken
-_NEW_REALM="myrealm1"
+_NEW_REALM="myrealm2"
 _createRealm "${_NEW_REALM}"
 _createGroups "${_NEW_REALM}"
 _createUsers "${_NEW_REALM}"
