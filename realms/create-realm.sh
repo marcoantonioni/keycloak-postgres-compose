@@ -1,23 +1,11 @@
 #!/bin/bash
 
 declare -a _GROUPS=("Requestors" "Validators")
+declare -a _USERS=()
+declare -a _USERS_IN_ROLE=()
+
 declare _USER_PREFIX="user"
 declare _USER_MAX=10
-
-declare -A two_d_array
-
-two_d_array[0,0]="1"
-two_d_array[0,1]="2"
-two_d_array[0,2]="3"
-two_d_array[0,3]="4"
-two_d_array[0,4]="5"
-
-two_d_array[1,0]="6"
-two_d_array[1,1]="7"
-two_d_array[1,2]="8"
-two_d_array[1,3]="9"
-two_d_array[1,4]="10"
-
 
 declare KEYCLOAK_HOST=https://localhost:7433
 declare KC_CLIENT_ID=admin-cli
@@ -78,28 +66,67 @@ function _createUsers() {
   fi
 }
 
+#-------------------------------
+_createRoleUsersData() {
+  
+  _groupIdx=$1
+  _range=$2
+
+  _min=${_range%..*}
+  _max=${_range#*..}
+
+  _USERS[$_groupIdx]=""
+  for ((_userSuffix = $_min ; _userSuffix <= $_max ; _userSuffix++)); do
+    _comma=""
+    if (( $_userSuffix != $_max )); then
+      _comma=","
+    fi
+    _USERS[$_groupIdx]="${_USERS[$_groupIdx]}${_USER_PREFIX}$_userSuffix$_comma"
+  done
+
+  _USERS_IN_ROLE[$_groupIdx]=${_USERS[$_groupIdx]}
+  #echo "_groupIdx=$_groupIdx - ${_GROUPS[$_groupIdx]}: ${_USERS_IN_ROLE[$_groupIdx]}"
+
+}
+
 function _mapUsersToRoles() {
-  echo ""
+  KC_NEW_REALM=$1
+  _groupIdx=0
+  for _grpName in "${_GROUPS[@]}"; do
+    IFS=',' read -r -a _usersInRole <<< "${_USERS_IN_ROLE[$_groupIdx]}"
+
+    for _userName in "${_usersInRole[@]}"; do
+      echo "Adding user [${_userName}] to group [$_grpName]"
+
+      KC_USER_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+        -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_NEW_REALM}/users" \
+        | jq '.[] | select(.username == "'${_userName}'")' | jq .id | sed 's/"//g')
+
+      KC_GROUP_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+        -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_NEW_REALM}/groups" \
+        | jq '.[] | select(.name == "'${_grpName}'")' | jq .id | sed 's/"//g')
+
+      if [[ ! -z "${KC_GROUP_ID}" ]] && [[ ! -z "${KC_GROUP_ID}" ]]; then 
+        curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+          -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_NEW_REALM}/users/${KC_USER_ID}/groups/${KC_GROUP_ID}"
+      else
+        echo "ERROR IDs not found for user [${_userName}] and/or group [$_grpName]"
+      fi
+
+    done
+
+    _groupIdx=$((_groupIdx+1))
+  done
+
 }
 
 #-------------------------------
-echo "Array di array"
-# Get the dimensions of the 2D array
-rows=2
-cols=${#two_d_array[@]}
-
-# Loop through the rows and columns to print the elements
-for ((i=0; i < rows; i++)); do
-    for ((j=0; j < cols; j++)); do
-        echo -n "${_GROUPS[$i]} ${two_d_array[$i,$j]} - "  # Print each element with a space
-    done
-    echo  # Move to the next line after printing a row
-done
-
-exit
 
 _getToken
 _NEW_REALM="myrealm2"
 _createRealm "${_NEW_REALM}"
 _createGroups "${_NEW_REALM}"
 _createUsers "${_NEW_REALM}"
+_createRoleUsersData 0 "1..3"
+_createRoleUsersData 1 "4..10"
+_mapUsersToRoles "${_NEW_REALM}"
