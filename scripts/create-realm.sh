@@ -1,6 +1,8 @@
 #!/bin/bash
 
-declare -a _GROUPS=("Requestors" "Validators")
+# declare -a _GROUPS=("Requestors" "Validators")
+declare -a _GROUPS=("Frontend" "Backend" "Managers")
+
 declare -a _USERS=()
 declare -a _USERS_IN_ROLE=()
 
@@ -17,7 +19,11 @@ KC_TOKEN=""
 function _getToken() {
   export KC_TOKEN=$(curl -sk --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" \
     "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
-  echo "token: $KC_TOKEN"
+  #echo "token: $KC_TOKEN"
+  if [[ -z "${KC_TOKEN}" ]]; then
+    echo "ERROR getting authentication token, exit."
+    exit 1
+  fi
 }
 
 function _createRealm() {
@@ -40,6 +46,7 @@ function _createRealm() {
 }
 
 function _createGroups() {
+  echo "#--- Creating groups"
   _realmName=$1
   if [[ ! -z "${KC_TOKEN}" ]] && [[ ! -z "${_realmName}" ]]; then
     for _grpName in "${_GROUPS[@]}"
@@ -53,6 +60,7 @@ function _createGroups() {
 }
 
 function _createUsers() {
+  echo "#--- Creating users"
   _realmName=$1
   if [[ ! -z "${KC_TOKEN}" ]] && [[ ! -z "${_realmName}" ]]; then
     for (( _usrIdx=1; _usrIdx<=$_USER_MAX; _usrIdx++ ))
@@ -90,6 +98,7 @@ _createRoleUsersData() {
 }
 
 function _mapUsersToRoles() {
+  echo "#--- Mapping users to role"
   KC_NEW_REALM=$1
   _groupIdx=0
   for _grpName in "${_GROUPS[@]}"; do
@@ -123,10 +132,13 @@ function _mapUsersToRoles() {
 #-------------------------------
 
 _getToken
-_NEW_REALM="myrealm2"
+_NEW_REALM="$1"
 _createRealm "${_NEW_REALM}"
 _createGroups "${_NEW_REALM}"
 _createUsers "${_NEW_REALM}"
+
 _createRoleUsersData 0 "1..3"
-_createRoleUsersData 1 "4..10"
+_createRoleUsersData 1 "4..6"
+_createRoleUsersData 2 "7..10"
+
 _mapUsersToRoles "${_NEW_REALM}"
