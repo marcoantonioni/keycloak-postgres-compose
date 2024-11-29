@@ -31,7 +31,7 @@ kc_ctr=$(podman ps | grep keycloak | awk '{print $1}')
 
 # da container, export in unico file: quarkus-realm.json
 ls -al /tmp
-/opt/keycloak/bin/kc.sh export --dir /tmp --users realm_file --realm quarkus
+/opt/keycloak/bin/kc.sh export --dir /tmp --users realm_file --realm my-realm-1
 ls -al /tmp
 exit
 ```
@@ -39,7 +39,7 @@ exit
 ## da shell host, copia configurazione del realm
 ```
 kc_ctr=$(podman ps | grep keycloak | awk '{print $1}')
-podman cp ${kc_ctr}:/tmp/quarkus-realm.json ./realms/quarkus-realm.json
+podman cp ${kc_ctr}:/tmp/my-realm-1-realm.json ./realms/my-realm-1-realm.json
 ```
 
 ## creazione utente via curl
