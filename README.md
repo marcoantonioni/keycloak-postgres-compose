@@ -8,7 +8,9 @@ https://www.mastertheboss.com/keycloak/getting-started-with-keycloak-powered-by-
 
 https://github.com/fmarchioni/mastertheboss/tree/master/bootable-jar/elytron-oidc-client-keycloak17
 
-https://stackoverflow.com/questions/56526560/create-a-user-on-keycloack-including-password-from-curl-command
+
+https://keycloak-managed-service.inteca.com/identity-access-management/harnessing-the-power-of-keycloak-and-quarkus-a-comprehensive-guide/
+
 
 ## Avvio containers
 ```
