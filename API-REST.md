@@ -58,6 +58,21 @@ curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H 
     -d '{ "name": "'${KC_GROUP_NAME}'" }' | jq .
 
 #--------------------------------------------------------
+# lista ruoli
+KC_REALM=my-realm-1
+curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles?first=0&max=100" | jq .
+
+#--------------------------------------------------------
+# crea ruolo realm
+KC_REALM=my-realm-1
+KC_ROLE_NAME="AlfaRole"
+
+curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+  -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles" \
+  -d '{ "name": "'${KC_ROLE_NAME}'", "description": "", "attributes": {} }'
+
+
+#--------------------------------------------------------
 # numero utenti (token admin)
 KC_REALM=master
 KC_REALM_USERS=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/count")
@@ -96,6 +111,38 @@ KC_GROUP_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer
 
 [[ ! -z "${KC_GROUP_ID}" ]] && [[ ! -z "${KC_GROUP_ID}" ]] && curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/${KC_USER_ID}/groups/${KC_GROUP_ID}"
 
+#--------------------------------------------------------
+# associa utente a ruolo 
+KC_REALM=my-realm-1
+KC_USER="mary"
+KC_ROLE_NAME="MyRole1"
+
+KC_USER_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+  -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users" \
+  | jq '.[] | select(.username == "'${KC_USER}'")' | jq .id | sed 's/"//g')
+
+KC_ROLE_DATA=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles" | jq '.[] | select(.name=="'${KC_ROLE_NAME}'")')
+
+echo $KC_ROLE_DATA 
+
+curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+  -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/${KC_USER_ID}/role-mappings/realm" \
+  -d "[${KC_ROLE_DATA}]"
+
+#--------------------------------------------------------
+# associa gruppo a ruolo
+
+KC_REALM=my-realm-1
+KC_ROLE_NAME="MyRole1"
+KC_GROUP_NAME="Requestors"
+
+KC_GROUP_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups" | jq '.[] | select(.name == "'${KC_GROUP_NAME}'")' | jq .id | sed 's/"//g')
+
+KC_ROLE_DATA=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles" | jq '.[] | select(.name=="'${KC_ROLE_NAME}'")')
+
+curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+  -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/groups/${KC_GROUP_ID}/role-mappings/realm" \
+  -d "[${KC_ROLE_DATA}]"
 
 #--------------------------------------------------------
 # crea realm
@@ -125,11 +172,6 @@ KC_USER_PWD=password
 KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
 echo $KC_TOKEN
 
-
-#--------------------------------------------------------
-# lista ruoli
-KC_REALM=my-realm-1
-curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles?first=0&max=100" | jq .
 
 
 #--------------------------------------------------------

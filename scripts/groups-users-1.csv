@@ -1,4 +1,4 @@
-GROUP_NAME, USERS, USER_PREFIX
-Admins, 1..3, admin
-Requestors, 1..6, requestor
-Validators, alice john mary
+GROUP_NAME, ROLE, USERS, USER_PREFIX
+Admins, RoleAdmin, 1..3, admin
+Requestors, RoleRequestor, 1..6, requestor
+Validators, RoleValidator, alice john mary

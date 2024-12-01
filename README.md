@@ -64,7 +64,7 @@ keytool -genkeypair -alias keycloak-localhost -keyalg RSA -keysize 2048 -validit
 keytool -list -keystore keycloak.keystore
 ```
 
-## creazione realm, gruppi, utenti, associazioni
+## creazione realm, gruppi+utenti, clienti+ruoli
 ```
-./scripts/create-realm.sh my-realm-1 ./scripts/groups-users-1.csv
+./scripts/create-realm.sh my-realm-1 ./scripts/groups-users-1.csv ./scripts/client-roles.csv
 ```
