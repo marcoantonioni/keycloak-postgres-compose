@@ -27,8 +27,8 @@ services:
     image: ${KC_IMAGE}
     profiles: ["base", "dbadmin"]
     ports:
-      # https
-      - "${KC_PORT}:8443"
+      - "${KC_PORT_HTTP}:8080"
+      - "${KC_PORT_HTTPS}:8443"
       - "${KC_PORT_MGMT}:9000"
     depends_on:
       postgres:
@@ -45,13 +45,15 @@ services:
       KC_DB_USERNAME: ${DB_USER}
       KC_DB_PASSWORD: ${DB_PWD}
       KC_DB_SCHEMA: ${DB_SCHEMA}
-
+      KC_PROXY: ${KC_PROXY}
+      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT}
     command:
       - ${KC_CMD_1}
       - ${KC_CMD_2}
       - ${KC_CMD_3} 
       - ${KC_CMD_4}
-      - ${KC_CMD_5}
+      #- ${KC_CMD_5}
 
   #--------------------------------------------
   pgadmin:

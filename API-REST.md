@@ -12,7 +12,7 @@ KC_USER_NAME=admin
 KC_USER_PWD=admin
 KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
 
-#echo $KC_TOKEN
+# echo $KC_TOKEN
 
 # Token expiration
 # Modificare 'Access Token Lifespan'
@@ -125,5 +125,39 @@ KC_USER_PWD=password
 KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
 echo $KC_TOKEN
 
+
+#--------------------------------------------------------
+# lista ruoli
+KC_REALM=my-realm-1
+curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/roles?first=0&max=100" | jq .
+
+
+#--------------------------------------------------------
+# lista dei clients
+KC_REALM=my-realm-1
+curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" | jq .
+
+# crea nuovo client
+KC_REALM=my-realm-1
+_NEW_CLIENT_NAME="my-client-bpm"
+_NEW_CLIENT_SECRET="my-secret"
+# , "defaultRoles": ["uma_authorization", "user"] ???
+curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+  -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" \
+  -d '{"name": "'${_NEW_CLIENT_NAME}'", "clientId": "'${_NEW_CLIENT_NAME}'", "enabled": true, "secret": "'${_NEW_CLIENT_SECRET}'", "directAccessGrantsEnabled": true, "serviceAccountsEnabled": true }' | jq .
+
+# legge UUID di client
+KC_CLIENT_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" | jq '.[] | select(.clientId == "'${_NEW_CLIENT_NAME}'")' | jq .id | sed 's/"//g')
+echo $KC_CLIENT_UUID
+
+# crea ruolo del client
+_NEW_ROLE_NAME="user_bpm"
+curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+  -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients/${KC_CLIENT_UUID}/roles" \
+  -d '{"name": "'${_NEW_ROLE_NAME}'", "clientRole": true }' | jq .
+
+# legge roles associati a client
+curl -w '\n' -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+  -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients/${KC_CLIENT_UUID}/roles" | jq .
 
 ```

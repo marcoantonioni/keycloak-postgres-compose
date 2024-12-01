@@ -230,9 +230,16 @@ if [[ ! -z "${_NEW_REALM}" ]]; then
   _getToken
   _createRealm "${_NEW_REALM}"
 
+  # tbd: create Client
+
   if [[ ! -z "${_GROUP_USERS_FILE}" ]]; then
     if [ -f "$(pwd)/${_GROUP_USERS_FILE}" ]; then
       _loadGroupAnfUsersFromFile "${_NEW_REALM}" "$(pwd)/${_GROUP_USERS_FILE}"
+
+      # tbd: create roles
+      # tbd: associate users to role
+
+      # verificare differenze tra ruolo del realm e ruolo del client per annotazione @RolesAllow...
     fi
   fi
 else
