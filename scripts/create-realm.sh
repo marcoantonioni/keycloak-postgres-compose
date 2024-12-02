@@ -27,7 +27,7 @@ function _getToken() {
   fi
 }
 
-_setAccessTokenLifespan() {
+_setTokensLifespan() {
   _realmName=$1
   _timeOut=$2
   if [[ -z "${_timeOut}" ]]; then
@@ -35,7 +35,9 @@ _setAccessTokenLifespan() {
   fi
   echo "Setting token lifespan [${_timeOut}] for realm [${_realmName}]"
   curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
-    -X PUT "${KEYCLOAK_HOST}/admin/realms/${_realmName}/ui-ext" -d '{"accessTokenLifespan": '${_timeOut}' }' | jq .
+    -X PUT "${KEYCLOAK_HOST}/admin/realms/${_realmName}/ui-ext" \
+    -d '{ "accessTokenLifespan": "'${_timeOut}'", "accessTokenLifespanForImplicitFlow": "'${_timeOut}'", "actionTokenGeneratedByAdminLifespan": "'${_timeOut}'", "actionTokenGeneratedByUserLifespan": "'${_timeOut}'", "oauth2DeviceCodeLifespan": "'${_timeOut}'" }' \
+    | jq .
 }
 
 #-------------------------------
@@ -58,7 +60,7 @@ function _createRealm() {
         "editUsernameAllowed": false,
         "bruteForceProtected": true
       }'
-    _setAccessTokenLifespan ${_newRealmName} ${_timeOut}
+    _setTokensLifespan ${_newRealmName} ${_timeOut}
   fi
 }
 

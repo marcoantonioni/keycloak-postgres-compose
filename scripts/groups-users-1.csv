@@ -1,4 +1,5 @@
 GROUP_NAME, ROLE, USERS, USER_PREFIX
+# [string], [string], [list of string sep. by blanks] or [numeric range], [string]
 MyAdmins, MyRoleAdmin, 1..3, admin
 MyRequestors, MyRoleRequestor, 1..6, requestor
 MyValidators, MyRoleValidator, 1..4, validator
