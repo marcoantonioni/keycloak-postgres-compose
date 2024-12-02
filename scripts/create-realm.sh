@@ -27,9 +27,21 @@ function _getToken() {
   fi
 }
 
+_setAccessTokenLifespan() {
+  _realmName=$1
+  _timeOut=$2
+  if [[ -z "${_timeOut}" ]]; then
+    _timeOut=14400
+  fi
+  echo "Setting token lifespan [${_timeOut}] for realm [${_realmName}]"
+  curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+    -X PUT "${KEYCLOAK_HOST}/admin/realms/${_realmName}/ui-ext" -d '{"accessTokenLifespan": '${_timeOut}' }' | jq .
+}
+
 #-------------------------------
 function _createRealm() {
-  _newRealmName=$1
+  _newRealmName="$1"
+  _timeOut="$2"
   if [[ ! -z "${KC_TOKEN}" ]] && [[ ! -z "${_newRealmName}" ]]; then
     echo "Creating realm [${_newRealmName}]"
     curl -k -s -X POST "${KEYCLOAK_HOST}/admin/realms" \
@@ -46,6 +58,7 @@ function _createRealm() {
         "editUsernameAllowed": false,
         "bruteForceProtected": true
       }'
+    _setAccessTokenLifespan ${_newRealmName} ${_timeOut}
   fi
 }
 
@@ -60,6 +73,7 @@ function _createGroup() {
       -d '{ "name": "'${_grpName}'" }' | jq .
   fi
 }
+
 #-------------------------------
 function _createGroups() {
   _realmName=$1
@@ -68,6 +82,23 @@ function _createGroups() {
     do
       _createGroup "${_realmName}" "$_grpName"
     done
+  fi
+}
+
+#-------------------------------
+_createPassword() {
+  _realmName=$1
+  _usrName=$2
+  _userPasswd=$3
+
+  _usrId=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+    -X GET "${KEYCLOAK_HOST}/admin/realms/${_realmName}/users" | jq '.[] | select(.username == "'${_usrName}'")' | jq .id | sed 's/"//g')
+  
+  if [[ ! -z "${_usrId}" ]]; then
+    echo "Setting password for user [${_usrName}] in realm [${_realmName}]"
+    curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+      -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/${_usrId}/reset-password" \
+      -d '{ "value": "'${_userPasswd}'", "type": "password", "temporary": false }'
   fi
 }
 
@@ -93,6 +124,7 @@ function _createUsers() {
     do
       _usrName="${_USER_PREFIX}${_usrIdx}"
       _createUser "${_realmName}" "${_usrName}"
+      _createPassword "${_realmName}" "${_usrName}" "${_usrName}"
     done
   fi
 }
@@ -231,12 +263,13 @@ _loadGroupAnfUsersFromFile() {
         done
       fi
 
-      for _usr in ${_USERS}; do 
+      for _usrName in ${_USERS}; do 
         # create user
-        _createUser "${_realmName}" "${_usr}"
+        _createUser "${_realmName}" "${_usrName}"
+        _createPassword "${_realmName}" "${_usrName}" "${_usrName}"
 
         # associate user to group
-        _associateUserToGroup "${_realmName}" "${_usr}" "${_grpName}"
+        _associateUserToGroup "${_realmName}" "${_usrName}" "${_grpName}"
       done
 
       if [[ ! -z "${_roleName}" ]]; then
@@ -328,10 +361,11 @@ _test() {
 _NEW_REALM="$1"
 _GROUP_USERS_FILE="$2"
 _GROUP_CLIENT_FILE="$3"
+_TOKEN_LIFESPAN="$4"
 
 if [[ ! -z "${_NEW_REALM}" ]]; then
   _getToken
-  _createRealm "${_NEW_REALM}"
+  _createRealm "${_NEW_REALM}" "${_TOKEN_LIFESPAN}"
 
   # create Client and clientRoles
   if [[ ! -z "${_GROUP_CLIENT_FILE}" ]]; then

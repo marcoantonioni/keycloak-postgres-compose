@@ -1,5 +1,6 @@
 # API REST
 
+https://www.keycloak.org/docs-api/latest/rest-api/index.html
 
 ```
 KEYCLOAK_HOST=https://localhost:7433
@@ -10,16 +11,24 @@ KC_CLIENT_ID=admin-cli
 KC_REALM=master
 KC_USER_NAME=admin
 KC_USER_PWD=admin
-KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
 
-# echo $KC_TOKEN
+# default Access Token Lifespan = 1 minute
+
+KC_LOGIN_DATA=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token")
+
+echo $KC_LOGIN_DATA | jq .
+
+KC_TOKEN=$(echo "${KC_LOGIN_DATA}" | jq .access_token | sed 's/"//g')
+
+echo $KC_TOKEN
+
 
 # Token expiration
 # Modificare 'Access Token Lifespan'
 # https://localhost:8443/admin/master/console/#/master/realm-settings/tokens
 
 KC_REALM=master
-KC_TK_EXP_SECS=7200
+KC_TK_EXP_SECS=14400
 curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/ui-ext" -d '{"accessTokenLifespan": '${KC_TK_EXP_SECS}' }' | jq .
 
 #--------------------------------------------------------
@@ -98,6 +107,22 @@ KC_USER=user5
 curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
     -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users" \
     -d '{ "username": "'${KC_USER}'", "firstName":"'${KC_USER}'","lastName":"'${KC_USER}'", "email":"'${KC_USER}'@home.net", "enabled":"true", "groups": ["groupAlfa"] }'
+
+#--------------------------------------------------------
+# reset password utente (token admin)
+KC_REALM=my-realm-1
+KC_USER=requestor4
+KC_PWD=requestor4
+
+KC_USER_ID=$(curl -s -k -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users" | jq '.[] | select(.username == "'${KC_USER}'")' | jq .id | sed 's/"//g')
+
+echo $KC_USER_ID
+
+curl -s -k -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+    -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/users/${KC_USER_ID}/reset-password" \
+    -d '{ "value": "'${KC_PWD}'", "type": "password", "temporary": false }'
+
+
 
 #--------------------------------------------------------
 # associa utente a gruppo

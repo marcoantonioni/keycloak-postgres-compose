@@ -66,5 +66,9 @@ keytool -list -keystore keycloak.keystore
 
 ## creazione realm, gruppi+utenti, clienti+ruoli
 ```
+# token lifespan default 14400 secs
 ./scripts/create-realm.sh my-realm-1 ./scripts/groups-users-1.csv ./scripts/client-roles.csv
+
+# token lifespan 3600 secs
+./scripts/create-realm.sh my-realm-1 ./scripts/groups-users-1.csv ./scripts/client-roles.csv 3600
 ```
