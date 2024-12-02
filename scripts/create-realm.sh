@@ -234,6 +234,10 @@ _loadGroupAnfUsersFromFile() {
 
   while IFS="," read -r _grpName _roleName _USERS _userPrefix
   do
+    # skip empty or comment
+    [[ -z "${_grpName}" ]] && continue
+    [[ ${_grpName} =~ ^#.* ]] && continue
+
     _grpName="$(echo -e "${_grpName}" | tr -d '[:space:]')"
     _roleName="$(echo -e "${_roleName}" | tr -d '[:space:]')"
     
@@ -321,6 +325,10 @@ _createClientAndRoles() {
 
     while IFS="," read -r _clientName _clientSecret _clientRoles
     do
+      # skip empty or comment
+      [[ -z "${_clientName}" ]] && continue
+      [[ ${_clientName} =~ ^#.* ]] && continue
+
       _clientName="$(echo -e "${_clientName}" | tr -d '[:space:]')"
       _clientSecret="$(echo -e "${_clientSecret}" | tr -d '[:space:]')"
       if [[ -z "${_clientSecret}" ]]; then
