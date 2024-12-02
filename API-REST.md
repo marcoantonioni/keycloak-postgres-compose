@@ -198,6 +198,14 @@ KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&g
 echo $KC_TOKEN
 
 
+KC_CLIENT_ID=my-client-bpm
+KC_CLIENT_SECRET=my-secret-bpm
+KC_REALM=my-realm-1
+KC_USER_NAME=requestor1
+KC_USER_PWD=requestor1
+KC_TOKEN=$(curl -k -s --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}&client_secret=${KC_CLIENT_SECRET}" "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
+echo $KC_TOKEN
+
 
 #--------------------------------------------------------
 # lista dei clients
