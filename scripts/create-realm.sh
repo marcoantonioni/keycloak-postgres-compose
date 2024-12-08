@@ -230,7 +230,7 @@ _associateGroupToRole() {
 }
 
 #-------------------------------
-_loadGroupAnfUsersFromFile() {
+_loadGroupAndUsersFromFile() {
   _realmName="$1"
   _fileName="$2"
 
@@ -299,6 +299,44 @@ _createClient() {
 }
 
 #-------------------------------
+_createScope() {
+  KC_REALM=$1
+  _SCOPE_NAME=$2
+  if [[ ! -z "${_SCOPE_NAME}" ]]; then
+    echo "Creating default scope [${_SCOPE_NAME}] in realm [${KC_REALM}]"
+    curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+      -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/client-scopes" \
+      -d '{"name": "'${_SCOPE_NAME}'","type": "default","protocol": "openid-connect","attributes": {"display.on.consent.screen": "true","include.in.token.scope": "true"}}'
+  fi
+}
+
+#-------------------------------
+_associateClientScope() {
+  KC_REALM=$1
+  _CLIENT_NAME=$2
+  _SCOPE_NAME=$3
+
+  if [[ ! -z "${_SCOPE_NAME}" ]]; then
+    # legge client UUID
+    KC_CLIENT_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+      -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" \
+      | jq '.[] | select(.clientId == "'${_CLIENT_NAME}'")' | jq .id | sed 's/"//g')
+
+    # legge scope UUID
+    KC_SCOPE_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
+      -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/client-scopes" \
+      | jq '.[] | select(.name == "'${_SCOPE_NAME}'")' | jq .id | sed 's/"//g')
+
+    if [[ ! -z "${KC_CLIENT_UUID}" ]] && [[ ! -z "${KC_SCOPE_UUID}" ]]; then
+      # associa scope al client
+      echo "Associating client scope [${_SCOPE_NAME}] for client [${_CLIENT_NAME}] in realm [${KC_REALM}]"
+      curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+        -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients/${KC_CLIENT_UUID}/default-client-scopes/${KC_SCOPE_UUID}"
+    fi
+  fi
+}
+
+#-------------------------------
 _createClientRole() {
   KC_REALM=$1
   _NEW_CLIENT_NAME=$2
@@ -325,7 +363,7 @@ _createClientAndRoles() {
 
   if [[ ! -z "${_realmName}" ]] && [[ ! -z "${_fileName}" ]]; then
 
-    while IFS="," read -r _clientName _clientSecret _clientRoles
+    while IFS="," read -r _clientName _clientSecret _clientScope _clientRoles
     do
       # skip empty or comment
       [[ -z "${_clientName}" ]] && continue
@@ -333,6 +371,8 @@ _createClientAndRoles() {
 
       _clientName="$(echo -e "${_clientName}" | tr -d '[:space:]')"
       _clientSecret="$(echo -e "${_clientSecret}" | tr -d '[:space:]')"
+      _clientScope="$(echo -e "${_clientScope}" | tr -d '[:space:]')"
+
       if [[ -z "${_clientSecret}" ]]; then
         _clientSecret="secret"
       fi
@@ -341,6 +381,12 @@ _createClientAndRoles() {
       if [[ "${_clientName}" != "CLIENT_NAME" ]]; then
         # create client
         _createClient "${_realmName}" "${_clientName}" "${_clientSecret}"
+
+        # create scope
+        _createScope "${_realmName}" "${_clientScope}"
+
+        # associate client scope
+        _associateClientScope "${_realmName}" "${_clientName}" "${_clientScope}"
 
         for _cRole in ${_clientRoles}; do 
           # create client roles
@@ -386,7 +432,7 @@ if [[ ! -z "${_NEW_REALM}" ]]; then
 
   if [[ ! -z "${_GROUP_USERS_FILE}" ]]; then
     if [ -f "$(pwd)/${_GROUP_USERS_FILE}" ]; then
-      _loadGroupAnfUsersFromFile "${_NEW_REALM}" "$(pwd)/${_GROUP_USERS_FILE}"
+      _loadGroupAndUsersFromFile "${_NEW_REALM}" "$(pwd)/${_GROUP_USERS_FILE}"
 
       # tbd: create realm roles
 

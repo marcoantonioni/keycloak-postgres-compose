@@ -1,6 +1,6 @@
-CLIENT_NAME, SECRET, ROLES
+CLIENT_NAME, SECRET, CLIENT_SCOPE, ROLES
 # without client roles
-my-client-bpm, my-secret-bpm,
+my-client-bpm, my-secret-bpm, my-bpm-scope
 
 # with client roles
-# my-client-bpm, my-secret-bpm, bpm-admins bpm-users bpm-requestors bpm-validators bpm-viewers
+# my-client-bpm, my-secret-bpm, my-bpm-scope, bpm-admins bpm-users bpm-requestors bpm-validators bpm-viewers

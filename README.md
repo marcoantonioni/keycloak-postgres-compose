@@ -11,6 +11,11 @@ https://github.com/fmarchioni/mastertheboss/tree/master/bootable-jar/elytron-oid
 
 https://keycloak-managed-service.inteca.com/identity-access-management/harnessing-the-power-of-keycloak-and-quarkus-a-comprehensive-guide/
 
+## TBD
+<pre>
+- rivedere uso _GROUPS
+- rivedere _test() e funzioni vecchie
+</pre>
 
 ## Avvio containers
 ```
