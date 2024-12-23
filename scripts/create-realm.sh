@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# declare -a _GROUPS=("Requestors" "Validators")
-declare -a _GROUPS=("Frontend" "Backend" "Managers")
-
 declare -a _USERS=()
 declare -a _USERS_IN_ROLE=()
 
@@ -17,6 +14,9 @@ declare KC_USER_PWD=admin
 KC_TOKEN=""
 
 #-------------------------------
+# Login and export access token in var KC_TOKEN
+#-------------------------------
+
 function _getToken() {
   export KC_TOKEN=$(curl -sk --data "username=${KC_USER_NAME}&password=${KC_USER_PWD}&grant_type=password&client_id=${KC_CLIENT_ID}" \
     "${KEYCLOAK_HOST}/realms/${KC_REALM}/protocol/openid-connect/token" | jq .access_token | sed 's/"//g')
@@ -27,6 +27,9 @@ function _getToken() {
   fi
 }
 
+#-------------------------------
+# Set token lifespan, default to 14400 msec.
+#-------------------------------
 _setTokensLifespan() {
   _realmName=$1
   _timeOut=$2
@@ -40,6 +43,8 @@ _setTokensLifespan() {
     | jq .
 }
 
+#-------------------------------
+# create new realm
 #-------------------------------
 function _createRealm() {
   _newRealmName="$1"
@@ -65,6 +70,8 @@ function _createRealm() {
 }
 
 #-------------------------------
+# Create Group
+#-------------------------------
 function _createGroup() {
   _realmName=$1
   _grpName=$2
@@ -77,16 +84,7 @@ function _createGroup() {
 }
 
 #-------------------------------
-function _createGroups() {
-  _realmName=$1
-  if [[ ! -z "${KC_TOKEN}" ]] && [[ ! -z "${_realmName}" ]]; then
-    for _grpName in "${_GROUPS[@]}"
-    do
-      _createGroup "${_realmName}" "$_grpName"
-    done
-  fi
-}
-
+# Create user Password
 #-------------------------------
 _createPassword() {
   _realmName=$1
@@ -105,6 +103,8 @@ _createPassword() {
 }
 
 #-------------------------------
+# Create User
+#-------------------------------
 function _createUser() {
   #echo "#--- Creating user"
   _realmName=$1
@@ -117,43 +117,9 @@ function _createUser() {
   fi
 }
 
-#-------------------------------
-function _createUsers() {
-  #echo "#--- Creating users"
-  _realmName=$1
-  if [[ ! -z "${KC_TOKEN}" ]] && [[ ! -z "${_realmName}" ]]; then
-    for (( _usrIdx=1; _usrIdx<=$_USER_MAX; _usrIdx++ ))
-    do
-      _usrName="${_USER_PREFIX}${_usrIdx}"
-      _createUser "${_realmName}" "${_usrName}"
-      _createPassword "${_realmName}" "${_usrName}" "${_usrName}"
-    done
-  fi
-}
 
 #-------------------------------
-_createRoleUsersData() {
-  
-  _groupIdx=$1
-  _range=$2
-
-  _min=${_range%..*}
-  _max=${_range#*..}
-
-  _USERS[$_groupIdx]=""
-  for ((_userSuffix = $_min ; _userSuffix <= $_max ; _userSuffix++)); do
-    _comma=""
-    if (( $_userSuffix != $_max )); then
-      _comma=","
-    fi
-    _USERS[$_groupIdx]="${_USERS[$_groupIdx]}${_USER_PREFIX}$_userSuffix$_comma"
-  done
-
-  _USERS_IN_ROLE[$_groupIdx]=${_USERS[$_groupIdx]}
-  #echo "_groupIdx=$_groupIdx - ${_GROUPS[$_groupIdx]}: ${_USERS_IN_ROLE[$_groupIdx]}"
-
-}
-
+# Associate a User to a Group
 #-------------------------------
 function _associateUserToGroup() {
   # echo "#--- Mapping users to role"
@@ -179,24 +145,9 @@ function _associateUserToGroup() {
   fi
 }
 
+
 #-------------------------------
-function _associateUsersToGroups() {
-  # echo "#--- Mapping users to role"
-  _newRealmName=$1
-  _groupIdx=0
-  for _grpName in "${_GROUPS[@]}"; do
-    IFS=',' read -r -a _usersInRole <<< "${_USERS_IN_ROLE[$_groupIdx]}"
-
-    for _userName in "${_usersInRole[@]}"; do
-      echo "Adding user [${_userName}] to group [$_grpName]"
-      _associateUserToGroup "${_newRealmName}" "${_userName}" "${_grpName}"
-    done
-
-    _groupIdx=$((_groupIdx+1))
-  done
-
-}
-
+# Create Role
 #-------------------------------
 _createRole() {
   _realmName=$1 
@@ -209,6 +160,8 @@ _createRole() {
   fi
 }
 
+#-------------------------------
+# Associate a Group to a Role
 #-------------------------------
 _associateGroupToRole() {
   _realmName=$1 
@@ -230,6 +183,8 @@ _associateGroupToRole() {
 }
 
 #-------------------------------
+# Create Groups and Users
+#-------------------------------
 _loadGroupAndUsersFromFile() {
   _realmName="$1"
   _fileName="$2"
@@ -248,12 +203,13 @@ _loadGroupAndUsersFromFile() {
     else
       _userPrefix="$(echo -e "${_userPrefix}" | tr -d '[:space:]')"
     fi
-    # if not titles
+
+    # if not titles row
     if [[ "${_grpName}" != "GROUP_NAME" ]]; then
       # create goup
       _createGroup "${_realmName}" "${_grpName}"
 
-      # user range ?
+      # is user range ?
       if [[ ${_USERS} = *..* ]]; then
         _trimmed="$(echo -e "${_USERS}" | tr -d '[:space:]')"
         _min=${_trimmed%..*}
@@ -288,6 +244,8 @@ _loadGroupAndUsersFromFile() {
 }
 
 #-------------------------------
+# Create Client
+#-------------------------------
 _createClient() {
     KC_REALM=$1
     _NEW_CLIENT_NAME=$2
@@ -298,6 +256,8 @@ _createClient() {
       -d '{"name": "'${_NEW_CLIENT_NAME}'", "clientId": "'${_NEW_CLIENT_NAME}'", "enabled": true, "secret": "'${_NEW_CLIENT_SECRET}'", "directAccessGrantsEnabled": true, "serviceAccountsEnabled": true }'
 }
 
+#-------------------------------
+# Create Scope
 #-------------------------------
 _createScope() {
   KC_REALM=$1
@@ -311,24 +271,26 @@ _createScope() {
 }
 
 #-------------------------------
+# Associate a Scope to a Client
+#-------------------------------
 _associateClientScope() {
   KC_REALM=$1
   _CLIENT_NAME=$2
   _SCOPE_NAME=$3
 
   if [[ ! -z "${_SCOPE_NAME}" ]]; then
-    # legge client UUID
+    # read client UUID
     KC_CLIENT_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
       -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" \
       | jq '.[] | select(.clientId == "'${_CLIENT_NAME}'")' | jq .id | sed 's/"//g')
 
-    # legge scope UUID
+    # read scope UUID
     KC_SCOPE_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
       -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/client-scopes" \
       | jq '.[] | select(.name == "'${_SCOPE_NAME}'")' | jq .id | sed 's/"//g')
 
     if [[ ! -z "${KC_CLIENT_UUID}" ]] && [[ ! -z "${KC_SCOPE_UUID}" ]]; then
-      # associa scope al client
+      # associate scope to client
       echo "Associating client scope [${_SCOPE_NAME}] for client [${_CLIENT_NAME}] in realm [${KC_REALM}]"
       curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
         -X PUT "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients/${KC_CLIENT_UUID}/default-client-scopes/${KC_SCOPE_UUID}"
@@ -337,18 +299,20 @@ _associateClientScope() {
 }
 
 #-------------------------------
+# Create a ClientRole
+#-------------------------------
 _createClientRole() {
   KC_REALM=$1
   _NEW_CLIENT_NAME=$2
   _NEW_ROLE_NAME=$3
 
-  # legge client UUID
+  # read client UUID
   KC_CLIENT_UUID=$(curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" \
     -X GET "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients" \
     | jq '.[] | select(.clientId == "'${_NEW_CLIENT_NAME}'")' | jq .id | sed 's/"//g')
 
   if [[ ! -z "${KC_CLIENT_UUID}" ]]; then
-    # crea ruolo del client
+    # create a role for client
     echo "Creating client role [${_NEW_ROLE_NAME}] for client [${_NEW_CLIENT_NAME}] in realm [${KC_REALM}]"
     curl -k -s -H "Accept: application/json" -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
       -X POST "${KEYCLOAK_HOST}/admin/realms/${KC_REALM}/clients/${KC_CLIENT_UUID}/roles" \
@@ -356,6 +320,8 @@ _createClientRole() {
   fi
 }
 
+#-------------------------------
+# Create Client and ClientRoles
 #-------------------------------
 _createClientAndRoles() {
   _realmName="$1"
@@ -374,10 +340,11 @@ _createClientAndRoles() {
       _clientScope="$(echo -e "${_clientScope}" | tr -d '[:space:]')"
 
       if [[ -z "${_clientSecret}" ]]; then
+        # if empty column in configuration set default password for client
         _clientSecret="secret"
       fi
 
-      # if not titles
+      # if not titles row
       if [[ "${_clientName}" != "CLIENT_NAME" ]]; then
         # create client
         _createClient "${_realmName}" "${_clientName}" "${_clientSecret}"
@@ -400,18 +367,9 @@ _createClientAndRoles() {
   fi
 }
 
+
 #-------------------------------
-_test() {
-  _createGroups "${_NEW_REALM}"
-  _createUsers "${_NEW_REALM}"
-
-  _createRoleUsersData 0 "1..3"
-  _createRoleUsersData 1 "4..6"
-  _createRoleUsersData 2 "7..10"
-
-  _associateUsersToGroups "${_NEW_REALM}"
-}
-
+# MAIN section
 #-------------------------------
 
 _NEW_REALM="$1"
@@ -423,22 +381,17 @@ if [[ ! -z "${_NEW_REALM}" ]]; then
   _getToken
   _createRealm "${_NEW_REALM}" "${_TOKEN_LIFESPAN}"
 
-  # create Client and clientRoles
+  # create Client and ClientRoles from configuration file
   if [[ ! -z "${_GROUP_CLIENT_FILE}" ]]; then
     if [ -f "$(pwd)/${_GROUP_CLIENT_FILE}" ]; then
       _createClientAndRoles "${_NEW_REALM}" "${_GROUP_CLIENT_FILE}"
     fi
   fi
 
+  # create Groups and Users from configuration file
   if [[ ! -z "${_GROUP_USERS_FILE}" ]]; then
     if [ -f "$(pwd)/${_GROUP_USERS_FILE}" ]; then
       _loadGroupAndUsersFromFile "${_NEW_REALM}" "$(pwd)/${_GROUP_USERS_FILE}"
-
-      # tbd: create realm roles
-
-      # tbd: associate users to role
-
-      # verificare differenze tra ruolo del realm e ruolo del client per annotazione @RolesAllow...
     fi
   fi
 else
